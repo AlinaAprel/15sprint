@@ -8,6 +8,8 @@ const NotFoundError = require('../errors/not-found-err');
 
 const User = require('../models/user');
 
+const { NODE_ENV, JWT_SECRET } = process.env;
+
 module.exports.getUsers = (req, res, next) => {
   User.find({})
     .orFail(new Error('NotFound', 'CastError'))
@@ -101,7 +103,7 @@ module.exports.login = (req, res, next) => {
       }
       const token = jwt.sign({
         _id: User._id,
-      }, 'secret-key', { expiresIn: '7d' });
+      }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', { expiresIn: '7d' });
       return res.send({ token });
     })
     .catch(() => {
