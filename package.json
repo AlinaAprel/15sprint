@@ -1,0 +1,33 @@
+{
+  "name": "12sprint",
+  "version": "0.0.1",
+  "description": "API и аутентификация",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "start-db": "brew services start mongodb-community@4.2",
+    "lint": "eslint app.js",
+    "lint:fix": "eslint ./src --fix"
+  },
+  "author": "Alina Aprel",
+  "license": "ISC",
+  "devDependencies": {
+    "eslint": "^7.11.0",
+    "eslint-config-airbnb": "^18.2.0",
+    "eslint-plugin-import": "^2.22.1",
+    "nodemon": "^2.0.6"
+  },
+  "dependencies": {
+    "babel-polyfill": "^6.26.0",
+    "bcrypt": "^5.0.0",
+    "bcryptjs": "^2.4.3",
+    "core-js": "^3.4.1",
+    "express": "^4.17.1",
+    "install": "^0.13.0",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.10.13",
+    "normalize-port": "^1.0.0",
+    "validator": "^13.1.17"
+  }
+}
