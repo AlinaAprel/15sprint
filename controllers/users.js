@@ -1,5 +1,7 @@
-const { bcrypt } = require('bcryptjs');
-const { jwt } = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const { NODE_ENV, JWT_SECRET } = process.env;
 
 const BadRequestError = require('../errors/bad-request-err');
 const UnauthorizedError = require('../errors/unauthorized-err');
@@ -8,7 +10,7 @@ const NotFoundError = require('../errors/not-found-err');
 
 const User = require('../models/user');
 
-const { NODE_ENV, JWT_SECRET } = process.env;
+// const { NODE_ENV, JWT_SECRET } = process.env;
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
@@ -88,27 +90,21 @@ module.exports.createUser = (req, res, next) => {
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
   User.findOne({ email }).select('+password')
-    // eslint-disable-next-line consistent-return
     .then((user) => {
       if (!user) {
         throw new UnauthorizedError('Неправильные почта или пароль');
-        // return res.status(401).send({ message: 'Неправильные почта или пароль 1' });
       }
-      return bcrypt.compare(password, user.password);
-    })
-    .then((matched) => {
-      if (!matched) {
-        throw new UnauthorizedError('Неправильные пароль или почта');
-        // res.status(401).send({ message: 'Неправильные пароль или почта' });
-      }
-      const token = jwt.sign({
-        _id: User._id,
-      }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', { expiresIn: '7d' });
-      return res.send({ token });
-    })
-    .catch(() => {
-      throw new UnauthorizedError('Что-то пошло не так');
-      // res.status(401).send({ message: `Что-то пошло не так ${err}` });
+      return bcrypt.compare(password, user.password)
+        .then((match) => {
+          if (!match) {
+            throw new UnauthorizedError('Неправильные пароль или почта');
+          }
+          const token = jwt.sign(
+            { _id: user._id },
+            NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', { expiresIn: '7d' },
+          );
+          return res.send({ token });
+        });
     })
     .catch((err) => next(err));
 };

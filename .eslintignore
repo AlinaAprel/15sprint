@@ -4,4 +4,4 @@ DS_Store
 .git
 src
 *.log
-.env.env
+.env

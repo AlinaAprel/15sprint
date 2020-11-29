@@ -15,4 +15,4 @@ src
 .idea
 .vscode
 
-env.env
+.env

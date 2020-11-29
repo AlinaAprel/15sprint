@@ -1,6 +1,7 @@
+require('dotenv').config();
+
 /* eslint-disable import/no-unresolved */
 const express = require('express');
-require('dotenv').config();
 const { celebrate, Joi } = require('celebrate');
 
 const PORT = 3000;
@@ -28,6 +29,12 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
 
 app.use(requestLogger);
 
+app.get('/crash-test', () => {
+  setTimeout(() => {
+    throw new Error('Сервер сейчас упадёт');
+  }, 0);
+});
+
 app.post('/signin', celebrate({
   body: Joi.object().keys({
     email: Joi.string().required().pattern(/^([\w-]\.?)+@([\w-]+\.)+[\w-]+/),
@@ -54,7 +61,7 @@ app.use(errorLogger);
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   if (err.statusCode === undefined) {
-    res.status(500).send({ message: 'На сервере произошла ошибка' });
+    res.status(500).send({ message: `На сервере произошла ошибка ${err}` });
   } else {
     res.status(err.statusCode).send({ message: err.message });
   }

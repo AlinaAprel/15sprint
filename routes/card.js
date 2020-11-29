@@ -3,10 +3,12 @@ const routerCards = require('express').Router();
 const { getCards, createCard, deleteCard } = require('../controllers/cards');
 
 routerCards.get('/', getCards);
+
 routerCards.post('/', celebrate({
   body: Joi.object().keys({
     name: Joi.string().required().min(2).max(30),
-    link: Joi.string().required().pattern(/(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/),
+    link: Joi.string(),
+    owner: Joi.string(),
   }),
 }), createCard);
 routerCards.delete('/:cardId', celebrate({
