@@ -1,6 +1,7 @@
 const UnauthorizedError = require('../errors/unauthorized-err');
 const ForbiddenError = require('../errors/forbidden-err');
-
+const NotFoundError = require('../errors/not-found-err');
+const BadRequestError = require('../errors/bad-request-err');
 const Card = require('../models/card');
 
 module.exports.getCards = (req, res, next) => {
@@ -30,6 +31,14 @@ module.exports.deleteCard = (req, res, next) => {
         throw new ForbiddenError('Вы не можете удалять чужие карточки');
       }
       res.send({ message: 'Карточка удалена!' });
+    }).catch((err) => {
+      if (err.message === 'NotFound') {
+        throw new NotFoundError('такой карточки нет');
+      }
+      if (err.name === 'CastError') {
+        throw new BadRequestError('Переданы неверные данные');
+      }
+      next(err);
     })
     .catch((err) => next(err));
 };
