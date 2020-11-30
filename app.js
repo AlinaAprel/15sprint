@@ -2,7 +2,7 @@ require('dotenv').config();
 
 /* eslint-disable import/no-unresolved */
 const express = require('express');
-const { celebrate, Joi } = require('celebrate');
+const { celebrate, Joi, errors } = require('celebrate');
 
 const PORT = 3000;
 const app = express();
@@ -37,6 +37,7 @@ app.get('/crash-test', () => {
 
 app.post('/signin', celebrate({
   body: Joi.object().keys({
+    name: Joi.string().required(),
     email: Joi.string().required().pattern(/^([\w-]\.?)+@([\w-]+\.)+[\w-]+/),
     password: Joi.string().min(6).pattern(/\S+/),
   }),
@@ -47,7 +48,7 @@ app.post('/signup', celebrate({
     about: Joi.string().required().min(2).max(30),
     avatar: Joi.string().required().pattern(/(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/),
     email: Joi.string().required().pattern(/^([\w-]\.?)+@([\w-]+\.)+[\w-]+/),
-    password: Joi.string().min(8).pattern(/\S+/),
+    password: Joi.string().min(6).pattern(/\S+/),
   }),
 }), createUser);
 
@@ -57,6 +58,7 @@ app.use('/cards', require('./routes/card'));
 app.use('/users', require('./routes/user'));
 
 app.use(errorLogger);
+app.use(errors());
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
