@@ -37,7 +37,7 @@ app.get('/crash-test', () => {
 
 app.post('/signin', celebrate({
   body: Joi.object().keys({
-    name: Joi.string().required(),
+    name: Joi.string(),
     email: Joi.string().required().pattern(/^([\w-]\.?)+@([\w-]+\.)+[\w-]+/),
     password: Joi.string().min(6).pattern(/\S+/),
   }),
