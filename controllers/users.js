@@ -1,40 +1,54 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+
+const { NODE_ENV, JWT_SECRET } = process.env;
+
+const BadRequestError = require('../errors/bad-request-err');
+const UnauthorizedError = require('../errors/unauthorized-err');
+const ConflictError = require('../errors/conflict-err');
+const NotFoundError = require('../errors/not-found-err');
+
 const User = require('../models/user');
 
-module.exports.getUsers = (req, res) => {
+// const { NODE_ENV, JWT_SECRET } = process.env;
+
+module.exports.getUsers = (req, res, next) => {
   User.find({})
     .orFail(new Error('NotFound', 'CastError'))
     .then((users) => {
-      res.status(200).json({ data: users });
+      res.send({ data: users });
     })
     .catch((err) => {
       if (err.message === 'CastError') {
-        res.status(400).send({ message: 'Переданы некорректные данные' });
-      } else if (err.message === 'NotFound') {
-        res.status(404).send({ message: 'Объект не найден' });
-      } else {
-        res.status(500).send({ message: 'Ошибка сервера' });
+        throw new BadRequestError('Переданы некорректные данные');
+        // res.status(400).send({ message: 'Переданы некорректные данные' });
       }
-    });
+      if (err.message === 'NotFound') {
+        throw new NotFoundError('Объект не найден');
+        // res.status(404).send({ message: 'Объект не найден' });
+      }
+    })
+    .catch((err) => next(err));
 };
 
-module.exports.getUserId = (req, res) => {
+module.exports.getUserId = (req, res, next) => {
   User.findById(req.params.userId)
     .orFail(new Error('NotFound', 'CastError'))
-    .then((user) => res.status(200).send({ data: user }))
+    .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Невалидный id' });
-      } else if (err.message === 'NotFound') {
-        res.status(404).send({ message: 'id не найден' });
-      } else {
-        res.status(500).send({ message: 'Ошибка сервера' });
+        throw new BadRequestError('Невалидный id');
+        // res.status(400).send({ message: 'Невалидный id' });
       }
-    });
+      if (err.message === 'NotFound') {
+        throw new NotFoundError('id не найден');
+        // res.status(404).send({ message: 'id не найден' });
+      }
+    })
+    .catch((err) => next(err));
 };
 // eslint-disable-next-line consistent-return
-module.exports.createUser = (req, res) => {
+module.exports.createUser = (req, res, next) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
@@ -42,7 +56,8 @@ module.exports.createUser = (req, res) => {
   const userpassword = password.replace(/\s/g, '');
 
   if (userpassword.length < 6) {
-    return res.status(400).send({ message: 'Пароль меньше 6 символов' });
+    throw new BadRequestError('Пароль меньше 6 символов');
+    // return res.status(400).send({ message: 'Пароль меньше 6 символов' });
   }
 
   bcrypt.hash(password, 10)
@@ -53,7 +68,7 @@ module.exports.createUser = (req, res) => {
       });
     })
     .then(() => {
-      res.status(200).send({
+      res.send({
         data: {
           name, about, avatar, email,
         },
@@ -61,35 +76,35 @@ module.exports.createUser = (req, res) => {
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: `Переданы некорректные данные ${err}` });
-      } else if (err.name === 'MongoError' && err.code === 11000) {
-        res.status(409).send({ message: 'Пользователь уже зарегистрирован' });
-      } else {
-        res.status(500).send({ message: 'Ошибка при создании user' });
+        throw new BadRequestError('Переданы некорректные данные');
+        // res.status(400).send({ message: `Переданы некорректные данные ${err}` });
       }
-    });
+      if (err.name === 'MongoError' && err.code === 11000) {
+        throw new ConflictError('Пользователь уже зарегистрирован');
+        // res.status(409).send({ message: 'Пользователь уже зарегистрирован' });
+      }
+    })
+    .catch((err) => next(err));
 };
 
-module.exports.login = (req, res) => {
+module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
   User.findOne({ email }).select('+password')
-    // eslint-disable-next-line consistent-return
     .then((user) => {
       if (!user) {
-        return res.status(401).send({ message: 'Неправильные почта или пароль 1' });
+        throw new UnauthorizedError('Неправильные почта или пароль');
       }
-      return bcrypt.compare(password, user.password);
+      return bcrypt.compare(password, user.password)
+        .then((match) => {
+          if (!match) {
+            throw new UnauthorizedError('Неправильные пароль или почта');
+          }
+          const token = jwt.sign(
+            { _id: user._id },
+            NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', { expiresIn: '7d' },
+          );
+          return res.send({ token });
+        });
     })
-    .then((matched) => {
-      if (!matched) {
-        res.status(401).send({ message: 'Неправильные пароль или почта' });
-      }
-      const token = jwt.sign({
-        _id: User._id,
-      }, 'secret-key', { expiresIn: '7d' });
-      return res.status(201).send({ token });
-    })
-    .catch((err) => {
-      res.status(401).send({ message: `Что-то пошло не так ${err}` });
-    });
+    .catch((err) => next(err));
 };
